@@ -1,0 +1,271 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallpaper Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a202c;
+            color: #e2e8f0;
+            font-family: 'Arial', sans-serif;
+        }
+        .wallpaper-card {
+            transition: transform 0.3s ease-in-out;
+        }
+        .wallpaper-card:hover {
+            transform: scale(1.05);
+        }
+        .search-bar {
+            background-color: #2d3748;
+            border-radius: 9999px;
+        }
+        .category-btn {
+            transition: background-color 0.3s ease;
+        }
+        .category-btn:hover {
+            background-color: #4a5568;
+        }
+        .upload-btn {
+            transition: background-color 0.3s ease;
+        }
+        .upload-btn:hover {
+            background-color: #4a5568;
+        }
+        #upload-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .popup-content {
+            background: #2d3748;
+            padding: 24px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .popup-content button {
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-gray-900 py-4 sticky top-0 z-50 shadow-lg">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-white">Wallpaper Hub</h1>
+            <nav class="hidden md:flex space-x-4">
+                <a href="#" class="text-gray-300 hover:text-white">Home</a>
+                <a href="#" class="text-gray-300 hover:text-white">Categories</a>
+                <a href="#" class="text-gray-300 hover:text-white">Popular</a>
+                <a href="#" class="text-gray-300 hover:text-white">Latest</a>
+                <button id="upload-btn" class="upload-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full hover:text-white">Upload</button>
+            </nav>
+            <div class="flex items-center">
+                <input type="text" placeholder="Search wallpapers..." class="search-bar px-4 py-2 text-gray-900 focus:outline-none">
+                <button class="ml-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Search</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Upload Popup -->
+    <div id="upload-popup">
+        <div class="popup-content">
+            <h2 class="text-xl font-semibold mb-4">Upload Guidelines</h2>
+            <p class="mb-4">Please do not upload any illegal or inappropriate photos. All uploads are reviewed, and any content violating our policies will be removed immediately.</p>
+            <p class="mb-4">Note: Your uploaded photo will be automatically deleted within 1 day for security and storage purposes.</p>
+            <input type="file" id="upload-file" accept="image/*" class="mb-4">
+            <button id="confirm-upload" class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Proceed with Upload</button>
+            <button id="close-popup" class="bg-gray-600 text-white px-4 py-2 rounded-full hover:bg-gray-700">Close</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Categories -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Categories</h2>
+            <div class="flex flex-wrap gap-2">
+                <button class="category-btn bg-gray-800 text-white px-4 py-2 rounded-full">Nature</button>
+                <button class="category-btn bg-gray-800 text-white px-4 py-2 rounded-full">Abstract</button>
+                <button class="category-btn bg-gray-800 text-white px-4 py-2 rounded-full">Anime</button>
+                <button class="category-btn bg-gray-800 text-white px-4 py-2 rounded-full">Sci-Fi</button>
+                <button class="category-btn bg-gray-800 text-white px-4 py-2 rounded-full">Gaming</button>
+            </div>
+        </section>
+
+        <!-- Wallpaper Grid -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4">Popular Wallpapers</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Wallpaper Card -->
+                <div class="wallpaper-card bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <img src="https://picsum.photos/300/200?random=1" alt="Wallpaper 1" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="text-lg font-medium">Nature Bliss</h3>
+                        <p class="text-sm text-gray-400">1920x1080</p>
+                        <button class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Download</button>
+                    </div>
+                </div>
+                <div class="wallpaper-card bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <img src="https://picsum.photos/300/200?random=2" alt="Wallpaper 2" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="text-lg font-medium">Abstract Art</h3>
+                        <p class="text-sm text-gray-400">2560x1440</p>
+                        <button class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Download</button>
+                    </div>
+                </div>
+                <div class="wallpaper-card bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <img src="https://picsum.photos/300/200?random=3" alt="Wallpaper 3" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="text-lg font-medium">Anime City</h3>
+                        <p class="text-sm text-gray-400">3840x2160</p>
+                        <button class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Download</button>
+                    </div>
+                </div>
+                <div class="wallpaper-card bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <img src="https://picsum.photos/300/200?random=4" alt="Wallpaper 4" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="text-lg font-medium">Sci-Fi Galaxy</h3>
+                        <p class="text-sm text-gray-400">1920x1080</p>
+                        <button class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700">Download</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">&copy; 2025 Wallpaper Hub. All rights reserved.</p>
+            <div class="mt-2">
+                <a href="#" class="text-gray-300 hover:text-white mx-2">About</a>
+                <a href="#" class="text-gray-300 hover:text-white mx-2">Contact</a>
+                <a href="#" class="text-gray-300 hover:text-white mx-2">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simulated storage for uploaded files (in-memory for demo purposes)
+        let uploadedFiles = [];
+
+        // Basic search functionality (placeholder)
+        const searchInput = document.querySelector('.search-bar');
+        const searchButton = document.querySelector('button');
+
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query) {
+                alert(`Searching for: ${query}`);
+                // Implement actual search logic here (e.g., fetch wallpapers from an API)
+            }
+        });
+
+        // Category filter (placeholder)
+        document.querySelectorAll('.category-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const category = button.textContent;
+                alert(`Filtering by category: ${category}`);
+                // Implement actual category filter logic here
+            });
+        });
+
+        // Popup functionality
+        const uploadButton = document.getElementById('upload-btn');
+        const uploadPopup = document.getElementById('upload-popup');
+        const closePopupButton = document.getElementById('close-popup');
+        const confirmUploadButton = document.getElementById('confirm-upload');
+        const fileInput = document.getElementById('upload-file');
+
+        uploadButton.addEventListener('click', () => {
+            uploadPopup.style.display = 'flex';
+        });
+
+        closePopupButton.addEventListener('click', () => {
+            uploadPopup.style.display = 'none';
+            fileInput.value = ''; // Clear file input
+        });
+
+        // Auto-delete functionality (simulated)
+        function scheduleDeletion(fileName) {
+            const uploadTime = Date.now();
+            uploadedFiles.push({ fileName, uploadTime });
+
+            // Simulate deletion after 1 day (24 hours = 86,400,000 ms)
+            setTimeout(() => {
+                uploadedFiles = uploadedFiles.filter(file => file.fileName !== fileName);
+                console.log(`File ${fileName} deleted after 1 day.`);
+                alert(`File ${fileName} has been automatically deleted after 1 day.`);
+            }, 24 * 60 * 60 * 1000);
+        }
+
+        // Upload handling (placeholder)
+        confirmUploadButton.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                if (file.type.startsWith('image/')) {
+                    alert(`Uploading file: ${file.name}`);
+                    scheduleDeletion(file.name);
+                    uploadPopup.style.display = 'none';
+                    fileInput.value = ''; // Clear file input
+                    // Implement actual upload logic here (e.g., send file to backend)
+                } else {
+                    alert('Please upload a valid image file.');
+                }
+            } else {
+                alert('Please select a file to upload.');
+            }
+        });
+    </script>
+</body>
+</html>
