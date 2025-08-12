@@ -1,0 +1,16 @@
+print ( " CATUCATION: 1.WRITE CAREFULLY" \
+" 2. THIS IS FOR STUDENTS" \
+" 3. THIS IS FOR THIS KIND OF STUDENT WHO HAS A SISTER WHO IS A STUDENT " )
+Person1 = input( " What is your name " )
+Person2 = input( " What is your Father's name " )
+Person3 = input( " What is your Mother's name " )
+Person4 = input( " Witch class do you read " )
+Person5 = input( " What is your Roll nomber " )
+Person6 = input( " Witch is your school name " ) 
+Person7 = input( " Witch is your Father's ocupation " )
+Person8 = input( " Witch is your Mother's ocupation " )
+person9 = input( " What is tha name of your sister " )
+Person10 = input( " Witch class do your sister read in " )
+Person11 = input( " Witch is the roll num of your sister " )
+person12 = input( " Witch School do your sister read in")
+print(f" My name is {Person1} . My Father's name is {Person2} . My Mother's name is {Person3} . I'm read in class {Person4} . My roll number is {Person5} . My school name is {Person6} . My Father's  is {Person7} . My Motther is {Person8} . I have a sister named {person9} . My sister read in class {Person10} . My sister's roll number is {Person11} . My sister read in {person12} .  " )
